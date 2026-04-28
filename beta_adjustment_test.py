@@ -203,7 +203,7 @@ def rolling_beta_alpha(ret_wide, mkt_series, window=126):
     return betas, alphas
 
 # Vectorized per-stock rolling (efficient)
-print("  Running rolling estimation (may take ~1 min for 491 stocks)...")
+print("  Running rolling estimation (may take ~1 min for 487 stocks)...")
 
 # More efficient: use pandas rolling with apply per stock
 def rolling_beta_per_stock(stock_rets, mkt_rets, window=126, min_obs=60):
@@ -366,7 +366,7 @@ ax.set_title('Long-Short Portfolio\nSimple vs Beta-Adjusted Output', fontweight=
 ax.legend(fontsize=9)
 
 fig.suptitle('Market-Model Beta Adjustment vs Simple Mean Subtraction\n'
-             '(S&P 500-491 stocks, drift_x_auc signal, 2016–2023)',
+             '(S&P 500-487 stocks, drift_x_auc signal, 2016–2023)',
              fontsize=13, fontweight='bold')
 plt.tight_layout()
 plt.savefig(OUT + 'fig_beta_adjustment.png')
