@@ -7,7 +7,7 @@ Three robustness panels for the closing auction mean-reversion paper:
   B. Sub-period analysis — 2016-2019 vs 2020-2023
   C. Alternative signal specifications
 
-All tests use the S&P 500-491 universe (broader, more conservative).
+All tests use the S&P 500-487 universe.
 Output variable: overnight_betaadj (rolling 126-day beta-adjusted).
 Primary signal: drift_x_auc = closing_drift × auction_share.
 """
@@ -29,9 +29,10 @@ plt.rcParams.update({
     'figure.dpi': 150, 'savefig.bbox': 'tight', 'savefig.dpi': 150,
 })
 
-DATA = "../"
-OUT  = "./"
-ROLL = 126   # 126-day window: best Sharpe, FM t, and Markov regime separation
+DATA      = "../"
+OUT       = "./"
+ROLL      = 126   # 126-day window: best Sharpe, FM t, and Markov regime separation
+COST_BPS  = 2 / 10000  # flat 2 bps/day transaction cost (paper Section 4.3)
 
 
 # ============================================================
@@ -119,7 +120,7 @@ def fm_result(clean, y_col, x_col):
 
 
 def sharpe_ls(clean, y_col, x_col):
-    """Q1-Q5 long-short Sharpe on y sorted by x."""
+    """Q1-Q5 long-short Sharpe on y sorted by x. Returns (gross_sharpe, net_sharpe, hac_t)."""
     ls_data = clean.dropna(subset=[y_col, x_col])
     ls_data = ls_data[ls_data[x_col] != 0]
 
@@ -136,11 +137,13 @@ def sharpe_ls(clean, y_col, x_col):
 
     ls_s = ls_data.groupby('DATE').apply(daily_ls).dropna()
     if len(ls_s) < 10:
-        return np.nan, np.nan
-    sharpe = ls_s.mean() / ls_s.std() * np.sqrt(252)
+        return np.nan, np.nan, np.nan
+    std = ls_s.std()
+    gross_sharpe = ls_s.mean() / std * np.sqrt(252)
+    net_sharpe   = (ls_s.mean() - COST_BPS) / std * np.sqrt(252)
     nw = sm.OLS(ls_s.values, np.ones(len(ls_s))).fit(cov_type='HAC',
                                                        cov_kwds={'maxlags': 5})
-    return sharpe, nw.tvalues[0]
+    return gross_sharpe, net_sharpe, nw.tvalues[0]
 
 
 # ============================================================
@@ -215,14 +218,14 @@ panel_a = {}
 for label, df in [('Without event filter', no_filter), ('With event filter', with_filter)]:
     c, t, p, n = ols_result(df, 'overnight_betaadj', 'drift_x_auc')
     fm_avg, fm_t, fm_p = fm_result(df, 'overnight_betaadj', 'drift_x_auc')
-    sh, ls_t = sharpe_ls(df, 'overnight_betaadj', 'drift_x_auc')
+    sh, sh_net, ls_t = sharpe_ls(df, 'overnight_betaadj', 'drift_x_auc')
     pct_removed = (1 - len(df) / len(no_filter)) * 100 if label != 'Without event filter' else 0
     panel_a[label] = dict(c=c, t=t, p=p, n=n, fm_t=fm_t, fm_p=fm_p,
-                          sh=sh, ls_t=ls_t, pct_removed=pct_removed)
+                          sh=sh, sh_net=sh_net, ls_t=ls_t, pct_removed=pct_removed)
     print(f"\n  [{label}]")
     print(f"    OLS  coef={c:+.5f}  t={t:+.2f}  {star(p)}  n={n:,}")
     print(f"    FM   avg_slope={fm_avg:+.5f}  t={fm_t:+.2f}  {star(fm_p)}")
-    print(f"    L/S  Sharpe={sh:.2f}  HAC t={ls_t:+.2f}")
+    print(f"    L/S  Sharpe(gross)={sh:.2f}  Sharpe(net)={sh_net:.2f}  HAC t={ls_t:+.2f}")
     if pct_removed > 0:
         print(f"    → Removed {pct_removed:.1f}% of obs (event days)")
 
@@ -254,7 +257,7 @@ for label, (start, end) in periods.items():
         continue
     c, t, p, n = ols_result(sub, 'overnight_betaadj', 'drift_x_auc')
     fm_avg, fm_t, fm_p = fm_result(sub, 'overnight_betaadj', 'drift_x_auc')
-    sh, ls_t = sharpe_ls(sub, 'overnight_betaadj', 'drift_x_auc')
+    sh, sh_net, ls_t = sharpe_ls(sub, 'overnight_betaadj', 'drift_x_auc')
 
     # Yearly breakdown within period
     ls_data = sub[sub['drift_x_auc'] != 0].dropna(subset=['overnight_betaadj','drift_x_auc'])
@@ -272,11 +275,11 @@ for label, (start, end) in periods.items():
     pos_years = int((yearly['mean'] > 0).sum())
 
     panel_b[label] = dict(c=c, t=t, p=p, n=n, fm_t=fm_t, fm_p=fm_p,
-                          sh=sh, ls_t=ls_t, yearly=yearly, pos_years=pos_years)
+                          sh=sh, sh_net=sh_net, ls_t=ls_t, yearly=yearly, pos_years=pos_years)
     print(f"\n  [{label}]  n={n:,}  tickers={sub['SYM_ROOT'].nunique()}")
     print(f"    OLS  coef={c:+.5f}  t={t:+.2f}  {star(p)}")
     print(f"    FM   t={fm_t:+.2f}  {star(fm_p)}")
-    print(f"    L/S  Sharpe={sh:.2f}  HAC t={ls_t:+.2f}  pos_years={pos_years}/{len(yearly)}")
+    print(f"    L/S  Sharpe(gross)={sh:.2f}  Sharpe(net)={sh_net:.2f}  HAC t={ls_t:+.2f}  pos_years={pos_years}/{len(yearly)}")
     print("    Yearly L/S breakdown:")
     for yr, row in yearly.iterrows():
         mk = '▲' if row['mean'] > 0 else '▼'
@@ -333,8 +336,8 @@ for label, xcol in specs:
     try:
         c, t, p, n = ols_result(sub, 'overnight_betaadj', xcol)
         fm_avg, fm_t, fm_p = fm_result(sub, 'overnight_betaadj', xcol)
-        sh, ls_t = sharpe_ls(sub, 'overnight_betaadj', xcol)
-        panel_c[label] = dict(c=c, t=t, p=p, fm_t=fm_t, fm_p=fm_p, sh=sh, n=n)
+        sh, sh_net, ls_t = sharpe_ls(sub, 'overnight_betaadj', xcol)
+        panel_c[label] = dict(c=c, t=t, p=p, fm_t=fm_t, fm_p=fm_p, sh=sh, sh_net=sh_net, n=n)
         print(f"  {label:<35}  {t:>+8.2f}  {star(p):>5}  {fm_t:>+8.2f}  {star(fm_p):>5}  {sh:>7.2f}")
     except Exception as e:
         print(f"  {label:<35}  ERROR: {e}")
@@ -385,7 +388,7 @@ ax.set_title('Long-Short Sharpe Ratio\n(Q1-Q5 on drift_x_auc)', fontweight='bold
 ax.set_ylabel('Annualised Sharpe')
 
 fig.suptitle('Panel A: Effect of Earnings/Event-Day Filter\n'
-             'S&P 500-491 | 2016-2023 | Beta-Adjusted Output',
+             'S&P 500-487 | 2016-2023 | Beta-Adjusted Output',
              fontsize=13, fontweight='bold')
 plt.tight_layout()
 plt.savefig(OUT + 'fig_robustness_A_earnings_filter.png')
@@ -453,7 +456,7 @@ if panel_b:
     ax.tick_params(axis='x', labelrotation=30)
 
     fig.suptitle('Panel B: Sub-period Robustness — Pre vs Post-COVID\n'
-                 'S&P 500-491 | Beta-Adjusted Output | drift_x_auc signal',
+                 'S&P 500-487 | Beta-Adjusted Output | drift_x_auc signal',
                  fontsize=13, fontweight='bold')
     plt.tight_layout()
     plt.savefig(OUT + 'fig_robustness_B_subperiod.png')
@@ -506,7 +509,7 @@ if panel_c:
     ax.set_ylabel('Annualised Sharpe')
 
     fig.suptitle('Panel C: Alternative Signal Specifications\n'
-                 'S&P 500-491 | 2016-2023 | Beta-Adjusted Output | Standardised signals (z-scores)\n'
+                 'S&P 500-487 | 2016-2023 | Beta-Adjusted Output | Standardised signals (z-scores)\n'
                  'Red = Primary signal (drift_x_auc)',
                  fontsize=12, fontweight='bold')
     plt.tight_layout()
@@ -521,19 +524,19 @@ if panel_c:
 section("ROBUSTNESS SUMMARY")
 
 print("\n  PANEL A — Earnings Filter")
-print(f"  {'Specification':<30}  {'OLS t':>7}  {'FM t':>7}  {'Sharpe':>7}  {'Adopted':>8}")
-print("  " + "-"*65)
+print(f"  {'Specification':<30}  {'OLS t':>7}  {'FM t':>7}  {'Gross':>7}  {'Net':>7}  {'Adopted':>8}")
+print("  " + "-"*72)
 for label in panel_a:
     d = panel_a[label]
     adopted = '<-- ADOPTED' if label == better else ''
-    print(f"  {label:<30}  {d['t']:>+7.2f}  {d['fm_t']:>+7.2f}  {d['sh']:>7.2f}  {adopted}")
+    print(f"  {label:<30}  {d['t']:>+7.2f}  {d['fm_t']:>+7.2f}  {d['sh']:>7.2f}  {d['sh_net']:>7.2f}  {adopted}")
 
 print("\n  PANEL B — Sub-period")
-print(f"  {'Period':<30}  {'OLS t':>7}  {'FM t':>7}  {'Sharpe':>7}  {'Pos yrs'}")
-print("  " + "-"*65)
+print(f"  {'Period':<30}  {'OLS t':>7}  {'FM t':>7}  {'Gross':>7}  {'Net':>7}  {'Pos yrs'}")
+print("  " + "-"*72)
 for label in panel_b:
     d = panel_b[label]
-    print(f"  {label:<30}  {d['t']:>+7.2f}  {d['fm_t']:>+7.2f}  {d['sh']:>7.2f}  "
+    print(f"  {label:<30}  {d['t']:>+7.2f}  {d['fm_t']:>+7.2f}  {d['sh']:>7.2f}  {d['sh_net']:>7.2f}  "
           f"{d['pos_years']}/{len(d['yearly'])}")
 
 print("\n  PANEL C — Signal Specifications")

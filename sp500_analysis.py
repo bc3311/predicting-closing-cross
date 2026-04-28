@@ -222,7 +222,7 @@ def run_analysis(taq, clean, label):
     print(f"  Win rate:   {win_rate*100:.1f}%")
     for yr, row in yearly.iterrows():
         mk = '▲' if row['mean'] > 0 else '▼'
-        print(f"    {yr}  {mk}  {row['mean']*10000:+.1f} bps/day  t={row['t']:+.2f}")
+        print(f"    {yr}  {mk}  {row['mean']*10000:+.2f} bps/day  t={row['t']:+.2f}")
     results['LS']       = (ls_series.mean(), ls_t, ls_p, sharpe, win_rate)
     results['ls_series']= ls_series
     results['yearly_ls']= yearly

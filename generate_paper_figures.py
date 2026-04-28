@@ -15,7 +15,7 @@ import matplotlib.patches as mpatches
 import numpy as np
 import os
 
-OUT = os.path.expanduser("~/Desktop/Thesis Figures Updated/")
+OUT = os.path.expanduser("~/Desktop/Thesis Figures/")
 os.makedirs(OUT, exist_ok=True)
 
 # ── Style ──────────────────────────────────────────────────────────────────
@@ -59,16 +59,16 @@ plt.close()
 print("Saved fig1_auction_share_trend.png")
 
 # ── Figure 2: Annual Long-Short Returns ───────────────────────────────────
-returns_bps  = [6.27, 2.74, 5.58, 6.50, 7.06, 3.83, 2.75, 3.90]
-t_stats      = [5.22, 3.29, 5.69, 7.50, 4.17, 3.30, 2.41, 3.81]
+returns_bps  = [6.15, 2.91, 5.55, 6.49, 7.14, 3.76, 2.73, 4.15]
+t_stats      = [5.11, 3.45, 5.76, 7.53, 4.26, 3.27, 2.38, 4.10]
 colors_yr    = [GREEN if r > 0 else RED for r in returns_bps]
 
 fig, ax = plt.subplots(figsize=(9, 5))
 bars = ax.bar(years, returns_bps, color=colors_yr, edgecolor='white',
               linewidth=0.8, width=0.6)
 ax.axhline(0, color='black', linewidth=0.8)
-ax.axhline(2.58, color=BLUE, linestyle='--', linewidth=1.5,
-           label='Full-sample mean: 2.58 bps/day (net of 2 bps cost)')
+ax.axhline(2.78, color=BLUE, linestyle='--', linewidth=1.5,
+           label='Full-sample mean: 2.78 bps/day (net of 2 bps cost)')
 
 for bar, t in zip(bars, t_stats):
     h = bar.get_height()
@@ -84,7 +84,7 @@ ax.set_ylim(-1, 9.5)
 ax.legend(fontsize=9)
 
 # Annotation box
-ax.text(0.02, 0.97, 'Annualised Sharpe: 2.39\n8/8 years positive',
+ax.text(0.02, 0.97, 'Annualised Sharpe: 2.50\n8/8 years positive',
         transform=ax.transAxes, va='top', ha='left', fontsize=9,
         bbox=dict(boxstyle='round,pad=0.4', facecolor='white', edgecolor=GRAY, alpha=0.8))
 plt.tight_layout()
@@ -94,8 +94,8 @@ print("Saved fig2_annual_longshort.png")
 
 # ── Figure 3: Markov Regime Coefficients ─────────────────────────────────
 regimes      = ['Volatile Regime\n(310 days, 15.4%)', 'Calm Regime\n(1,701 days, 84.6%)']
-coefs        = [-1.392, -0.624]
-t_vals       = [-4.10, -2.36]
+coefs        = [-1.349, -0.625]
+t_vals       = [-3.97, -2.35]
 ci_half      = [abs(c/t)*1.96 for c, t in zip(coefs, t_vals)]  # approx 95% CI
 
 fig, ax = plt.subplots(figsize=(7, 4.5))
@@ -118,7 +118,7 @@ ax.set_ylim(-2.1, 0.4)
 
 ax.annotate('', xy=(0, coefs[0]), xytext=(1, coefs[1]),
             arrowprops=dict(arrowstyle='<->', color=GRAY, lw=1.5))
-ax.text(0.5, (coefs[0]+coefs[1])/2 - 0.12, 'Ratio = 2.23×',
+ax.text(0.5, (coefs[0]+coefs[1])/2 - 0.12, 'Ratio = 2.16×',
         ha='center', fontsize=10, color=GRAY, style='italic')
 
 plt.tight_layout()
@@ -129,8 +129,8 @@ print("Saved fig3_markov_regimes.png")
 # ── Figure 4: Signal Specifications Comparison ────────────────────────────
 spec_labels  = ['M1: DriftxAuc\n(Primary)', 'M2: Drift\nOnly', 'M3: Auction\nShare Only',
                  'M4: Order\nImbalance', 'M5: Confirmed\nPressure']
-ols_t_specs  = [-9.97, -9.33, 1.75, -3.65, -9.15]
-sharpe_specs = [3.33,  3.20,  0.27, 0.77,  3.09]
+ols_t_specs  = [-10.55, -10.21, 1.80, -3.53, -10.10]
+sharpe_specs = [3.78,   3.57,  0.19, 0.62,   3.28]
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 x = np.arange(len(spec_labels))
@@ -170,9 +170,9 @@ print("Saved fig4_signal_specs.png")
 
 # ── Figure 5: Sub-Period Results ───────────────────────────────────────────
 subperiod_labels = ['Pre-COVID\n(2016–2019)', 'Post-COVID\n(2020–2023)', 'Full Sample\n(2016–2023)']
-fm_t_sub    = [-6.85, -6.34, -9.28]
-sharpe_sub  = [3.82,  1.72,  2.34]
-ols_t_sub   = [-1.91, -4.40, -2.95]
+fm_t_sub    = [-8.79, -6.23, -10.55]
+sharpe_sub  = [3.60,  2.18,   2.65]
+ols_t_sub   = [-1.27, -4.58,  -2.07]
 
 x = np.arange(len(subperiod_labels))
 w = 0.25
@@ -203,9 +203,9 @@ print("Saved fig5_subperiod.png")
 
 # ── Figure 6: Event Filter Robustness ─────────────────────────────────────
 labels_ef   = ['Without\nEvent Filter', 'With\nEvent Filter']
-ols_t_ef    = [2.70, 2.95]      # absolute values
-fm_t_ef     = [10.55, 9.28]
-sharpe_ef   = [2.39, 2.34]
+ols_t_ef    = [2.70, 2.07]      # absolute values (without filter rounds to 2.70)
+fm_t_ef     = [10.64, 10.55]
+sharpe_ef   = [2.50, 2.65]
 
 x = np.arange(2)
 w = 0.25
@@ -234,9 +234,9 @@ print("Saved fig6_event_filter.png")
 # ── Figure 7: DJIA vs S&P 500 Comparison (hardcoded paper values) ─────────
 # S&P 500 values from paper tables; DJIA values from current code run
 labels   = ['DJIA-30', 'S&P 500-487']
-ols_vals = [4.48, 2.70]       # |OLS two-way clustered t|
-fm_vals  = [4.30, 10.55]      # |FM Newey-West t|
-sh_vals  = [1.11, 2.39]       # Long-short annualised Sharpe (net of 2 bps cost)
+ols_vals = [6.57, 2.70]       # |OLS two-way clustered t|
+fm_vals  = [4.12, 10.64]      # |FM Newey-West t|
+sh_vals  = [1.18, 2.50]       # Long-short annualised Sharpe (DJIA gross, SP500 net of 2 bps)
 col2     = ['steelblue', '#c0392b']
 
 fig, axes = plt.subplots(1, 3, figsize=(15, 5))
@@ -274,9 +274,9 @@ fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 # Panel 1: Just show Sharpe comparison as proxy for cumulative trajectory message
 ax = axes[0]
 years_all = np.arange(2016, 2024)
-sp_cum    = np.cumsum([6.27, 2.74, 5.58, 6.50, 7.06, 3.83, 2.75, 3.90]) * 252
+sp_cum    = np.cumsum([6.15, 2.91, 5.55, 6.49, 7.14, 3.76, 2.73, 4.15]) * 252
 ax.plot(years_all, sp_cum, 'o-', color='#c0392b', linewidth=2,
-        markersize=5, label='S&P 500-487 (Sharpe=2.39)')
+        markersize=5, label='S&P 500-487 (Sharpe=2.50)')
 ax.axhline(0, color='black', linewidth=0.6, linestyle='--')
 ax.fill_between(years_all, sp_cum, 0, alpha=0.08, color='#c0392b')
 ax.set_ylabel('Cumulative annual Q1-Q5 return (bps/yr × year)')
@@ -286,15 +286,15 @@ ax.legend(fontsize=9)
 
 # Panel 2: Markov amplification ratio — hardcoded paper value for S&P 500
 ax = axes[1]
-ratios = [2.23]
+ratios = [2.16]
 bar = ax.bar(['S&P 500-487'], ratios, color=['#c0392b'], alpha=0.85, width=0.4)
 ax.axhline(1.0, color='black', linewidth=0.8, linestyle='--', label='No amplification (1×)')
-ax.text(0, 2.23+0.03, '2.23×', ha='center', fontsize=14, fontweight='bold', color='#c0392b')
+ax.text(0, 2.16+0.03, '2.16×', ha='center', fontsize=14, fontweight='bold', color='#c0392b')
 ax.set_ylim(0, 3.0)
 ax.set_ylabel('Volatile / Calm reversal ratio')
 ax.set_title('Markov Amplification Ratio\n(volatile ÷ calm OLS coefficient)', fontweight='bold')
 ax.legend(fontsize=9)
-ax.text(0.5, 0.92, 'Volatile: coef=−1.392 (t=−4.10***)\nCalm:     coef=−0.624 (t=−2.36**)',
+ax.text(0.5, 0.92, 'Volatile: coef=−1.349 (t=−3.97***)\nCalm:     coef=−0.625 (t=−2.35**)',
         transform=ax.transAxes, ha='center', va='top', fontsize=9,
         bbox=dict(boxstyle='round,pad=0.4', facecolor='white', edgecolor=GRAY, alpha=0.85))
 
