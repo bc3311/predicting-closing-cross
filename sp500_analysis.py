@@ -1,7 +1,7 @@
 """
 sp500_analysis.py
 =================
-Runs the same pipeline on DJIA (30 stocks) and S&P 500 (~491 stocks) and
+Runs the same pipeline on DJIA (30 stocks) and S&P 500 (487 stocks) and
 compares results side by side. Confirms that the mean reversion finding
 generalises beyond blue-chip DJIA stocks.
 

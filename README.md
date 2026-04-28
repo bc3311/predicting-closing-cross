@@ -21,6 +21,6 @@ Place `taq_sp500.csv`, `crsp_sp500.csv`, `taq_intraday.csv`, and `crsp_daily.csv
 
 - **Signal**: DriftxAuc = ClosingDrift × AuctionShare
 - **OLS**: t = −2.70 (two-way clustered SE, Petersen 2009)
-- **Fama-MacBeth**: t = −10.55 (Newey-West, 5 lags, 1,885 cross-sections)
-- **Long-short Sharpe**: 2.39 (net of 2 bps/day cost, 8/8 years positive)
-- **Markov amplification**: 2.23× stronger reversal in volatile regimes vs calm
+- **Fama-MacBeth**: t = −10.64 (Newey-West, 5 lags, 1,885 cross-sections)
+- **Long-short Sharpe**: 2.50 (net of 2 bps/day cost, 8/8 years positive)
+- **Markov amplification**: 2.16× stronger reversal in volatile regimes vs calm
